@@ -1,4 +1,8 @@
-# Data Science Assignment Submission
+# 📊 Data Science Assignment Submission
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://anjum1104-datascience-pro1-ds-anjumdashboard-dx0ok2.streamlit.app/)
+**Live Dashboard:** [Click Here to View App](https://anjum1104-datascience-pro1-ds-anjumdashboard-dx0ok2.streamlit.app/)
+
 
 ## Setup Instructions
 
