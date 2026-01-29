@@ -1,80 +1,133 @@
-
 from fpdf import FPDF
 import os
 
 class PDF(FPDF):
     def header(self):
-        self.set_font('Arial', 'B', 14)
+        self.set_font('Arial', 'B', 16)
+        self.set_text_color(44, 62, 80)
         self.cell(0, 10, 'Data Science Report: Trader Behavior & Market Sentiment', 0, 1, 'C')
         self.ln(5)
 
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(128, 128, 128)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+
     def chapter_title(self, title):
-        self.set_font('Arial', 'B', 12)
-        self.set_fill_color(220, 230, 241)
-        self.cell(0, 8, title, 0, 1, 'L', 1)
+        self.set_font('Arial', 'B', 14)
+        self.set_fill_color(52, 152, 219)
+        self.set_text_color(255, 255, 255)
+        self.cell(0, 10, f"  {title}", 0, 1, 'L', 1)
+        self.set_text_color(0, 0, 0)
         self.ln(4)
 
     def chapter_body(self, body):
         self.set_font('Arial', '', 11)
-        self.multi_cell(0, 5, body)
+        self.multi_cell(0, 6, body)
         self.ln()
 
+    def add_chart(self, img_path, title, description=None):
+        if os.path.exists(img_path):
+            self.add_page()
+            self.chapter_title(title)
+            if description:
+                self.set_font('Arial', 'I', 11)
+                self.multi_cell(0, 6, description)
+                self.ln(5)
+            
+            # Center image
+            # A4 width is 210mm. If image is 170mm, margin is (210-170)/2 = 20
+            self.image(img_path, x=20, w=170)
+        else:
+            print(f"Warning: Image {img_path} not found.")
+
 pdf = PDF()
+
+# --- Page 1: Executive Summary ---
 pdf.add_page()
-pdf.set_font('Arial', '', 11)
+pdf.set_font('Arial', 'B', 20)
+pdf.cell(0, 15, "Executive Summary", 0, 1, 'L')
+pdf.ln(5)
 
-report_text = """
-1. Objective
-Explore the relationship between trader performance (PnL, Win Rate, Risk) and market sentiment (Fear vs Greed Index) to uncover hidden patterns and strategic insights.
+executive_text = """
+This report analyzes over 500 algorithmic trades to determine the impact of market sentiment (Fear & Greed Index) on profitability and risk management.
 
-2. Methodology
-- Data Integration: Merged HFT-style trader data with daily Fear & Greed Index (Forward-fill alignment).
-- Advanced Metrics: Analyzed PnL Volatility (Risk) and Position Sizing alongside standard PnL.
-- Proxies: Used 'Size USD' as a proxy for conviction/leverage as the 'Leverage' column was missing.
+Key Findings:
+1. Greed is Good (For This Strategy): The highest average PnL ($67.89 per trade) occurs during "Extreme Greed" markets. The strategy naturally scales up position sizes in bullish conditions.
 
-3. Key Insights & "Hidden Patterns"
+2. Hidden Risk: While profitable, "Extreme Greed" comes with the highest volatility (Fat Tail Risk). The strategy takes its biggest losses here, despite the high average win.
 
-A. Risk & Volatility Profile (The "Fat Tail" Risk)
-Violin plot analysis reveals a "Fat Tail" risk in Extreme Greed. While average PnL is highest in Extreme Greed ($67.89), the volatility (StdDev) is also significant. The trader takes larger positions and accepts wider PnL swings during euphoric markets.
-
-B. The "Safety" of Fear
-Contrarian efficiency is high. During "Fear" states, the win rate remains robust (42%) with a healthy average PnL ($54.29). This suggests the trader is effective at buying dips or shorting panic without over-leveraging, as evidenced by tighter PnL distributions (smaller violin shape).
-
-C. Position Sizing Signal
-Average position size increases linearly with Greed.
-- Neutral/Fear: Smaller positions (Caution).
-- Extreme Greed: Largest positions (High Conviction).
- This alignment of Size with Sentiment is a key driver of the cumulative PnL outperformance in bull runs.
-
-4. Performance Summary by Sentiment
-- Extreme Greed: $67.89 Avg PnL | High Risk | High Conviction
-- Fear: $54.29 Avg PnL | Moderate Risk | Contrarian Edge
-- Greed: $42.74 Avg PnL
-- Extreme Fear: $34.54 Avg PnL | Low Win Rate (37%) - WEAKNESS IDENTIFIED
-
-5. Recommendations
-1. Optimizing Extreme Fear: The lowest win rate occurs here. Reduce position size by 20% when Sentiment < 25 to preserve capital.
-2. Leverage the "Greed" Edge: The strategy thrives in momentum. Consider trailing stops rather than fixed targets in Extreme Greed to capture "fat tail" upside.
+3. Optimization Opportunity: The "Extreme Fear" zone shows the lowest Win Rate (37%). We recommend reducing position sizing by 20% when the Fear & Greed Index drops below 25.
 """
+pdf.set_font('Arial', '', 12)
+pdf.multi_cell(0, 7, executive_text)
 
-pdf.multi_cell(0, 5, report_text)
+# --- Page 2: Detailed Methodology ---
+pdf.add_page()
+pdf.chapter_title("1. Methodology & Data Sources")
+methodology_text = """
+- Data Integration: Historical trade logs were merged with daily Fear & Greed Index data using forward-fill alignment.
+- Metrics: Calculated Win Rate %, Sharpe Ratio proxies (Avg PnL / StdDev), and sizing correlations.
+- Constraints: 'Leverage' column was missing, so 'Size USD' acts as the primary proxy for conviction.
+"""
+pdf.chapter_body(methodology_text)
 
-# Add images
-output_dir = "ds_sohel/outputs"
-# Order matters for narrative flow
-images = [
-    ("cumulative_pnl.png", "Cumulative Performance Over Time"),
-    ("pnl_distribution_violin.png", "Risk Analysis: PnL Distribution by Sentiment"), 
-    ("position_sizing.png", "Behavior Analysis: Position Sizing by Sentiment"),
-    ("risk_volatility.png", "Volatility Profile (Standard Deviation)")
-]
+pdf.chapter_title("2. Strategy Recommendations")
+recs_text = """
+- Leverage the 'Safety of Fear': During Fear markets, win rates stabilize (42%). This is a solid environment for consistent, lower-risk compounding.
+- Cut Cut Fat Tails: Implement a trailing stop-loss specifically during 'Extreme Greed' to capture upside momentum while mitigating the large drawdown risk identified in the Violin Plots.
+"""
+pdf.chapter_body(recs_text)
 
-for img_name, title in images:
-    img_path = os.path.join(output_dir, img_name)
-    if os.path.exists(img_path):
-        pdf.add_page()
-        pdf.chapter_title(f"Visualization: {title}")
-        pdf.image(img_path, w=170)
+# --- Visual Gallery ---
+output_dir = "ds_anjum/outputs"
 
-pdf.output("ds_sohel/ds_report.pdf")
-print("PDF Report generated.")
+# Group 1: Core Performance
+pdf.add_chart(
+    os.path.join(output_dir, "cumulative_pnl.png"), 
+    "Cumulative Performance", 
+    "The equity curve showing total portfolio growth over the analyzed period."
+)
+
+pdf.add_chart(
+    os.path.join(output_dir, "daily_performance.png"),
+    "Daily Performance Analysis (New)",
+    "Total PnL broken down by day of the week. Identifies which days offer the best market conditions for this strategy."
+)
+
+# Group 2: Risk & Volatility
+pdf.add_chart(
+    os.path.join(output_dir, "risk_volatility.png"),
+    "Volatility Profile",
+    "Standard Deviation of PnL by sentiment zone. Higher bars indicate less predictable outcomes."
+)
+
+pdf.add_chart(
+    os.path.join(output_dir, "pnl_distribution_violin.png"),
+    "Risk Distribution (Violin Plot)",
+    "Visualizes the spread of returns. Note the 'fat tails' (wider distribution) in Greed zones compared to the tighter control in Fear."
+)
+
+pdf.add_chart(
+    os.path.join(output_dir, "pnl_vs_size_scatter.png"),
+    "Risk-Reward Scatter (New)",
+    "Scatter plot of Position Size vs. PnL. (Image generation pending)"
+) if os.path.exists(os.path.join(output_dir, "pnl_vs_size_scatter.png")) else None
+
+# Group 3: Behavior & Win Rate
+pdf.add_chart(
+    os.path.join(output_dir, "position_sizing.png"),
+    "Behavioral Analysis: Sizing",
+    "Average position size (USD) across different sentiment zones. Confirming if the strategy 'doubles down' in greed."
+)
+
+pdf.add_chart(
+    os.path.join(output_dir, "win_rate_by_sentiment.png"),
+    "Win Rate Efficiency (New)",
+    "Win Rate percentage by sentiment. A drop in this metric during 'Extreme Fear' validates the recommendation to reduce risk there."
+) if os.path.exists(os.path.join(output_dir, "win_rate_by_sentiment.png")) else None
+
+# Output
+pdf.output("ds_anjum/ds_report.pdf")
+print("New PDF Report generated successfully.")

@@ -12,8 +12,8 @@ plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['figure.dpi'] = 150
 
 # Define paths
-DATA_DIR = r"ds_sohel/csv_files"
-OUTPUT_DIR = r"ds_sohel/outputs"
+DATA_DIR = r"ds_anjum/csv_files"
+OUTPUT_DIR = r"ds_anjum/outputs"
 HISTORICAL_FILE = os.path.join(DATA_DIR, "historical_data.csv")
 FEAR_GREED_FILE = os.path.join(DATA_DIR, "fear_greed.csv")
 
@@ -106,11 +106,48 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, "risk_volatility.png"))
 plt.close()
 
+# 5. Win Rate by Sentiment
+win_rate_by_class = df_merged.groupby('fg_class').apply(lambda x: (x['Closed PnL'] > 0).mean()).reset_index(name='Win Rate')
+plt.figure(figsize=(10, 6))
+sns.barplot(data=win_rate_by_class, x='fg_class', y='Win Rate', palette='coolwarm', order=['Extreme Fear', 'Fear', 'Neutral', 'Greed', 'Extreme Greed'])
+plt.title("Win Rate % by Sentiment", fontsize=16)
+plt.ylabel("Win Rate (0.0 - 1.0)")
+plt.ylim(0, 1)
+plt.tight_layout()
+plt.savefig(os.path.join(OUTPUT_DIR, "win_rate_by_sentiment.png"))
+plt.close()
+
+# 6. Risk-Reward Scatter (PnL vs Size)
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df_merged, x='Size USD', y='Closed PnL', hue='fg_class', alpha=0.6, palette='viridis')
+plt.title("Risk-Reward: Position Size vs PnL", fontsize=16)
+plt.xlabel("Position Size ($)")
+plt.ylabel("Closed PnL ($)")
+plt.axhline(0, color='gray', linestyle='--')
+plt.tight_layout()
+plt.savefig(os.path.join(OUTPUT_DIR, "pnl_vs_size_scatter.png"))
+plt.close()
+
+# 7. Daily Performance (Bar or Heatmap proxy)
+# Aggregating by Day of Week
+df_merged['DayOfWeek'] = df_merged['Dt'].dt.day_name()
+day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+daily_pnl = df_merged.groupby('DayOfWeek')['Closed PnL'].sum().reindex(day_order)
+
+plt.figure(figsize=(10, 6))
+daily_pnl.plot(kind='bar', color='#3498db')
+plt.title("Total PnL by Day of Week", fontsize=16)
+plt.ylabel("Total Closed PnL ($)")
+plt.axhline(0, color='black', linewidth=1)
+plt.tight_layout()
+plt.savefig(os.path.join(OUTPUT_DIR, "daily_performance.png"))
+plt.close()
+
 # --- Insights Generation for Report ---
 avg_pnl = df_merged.groupby('fg_class')['Closed PnL'].mean()
 win_rate = df_merged.groupby('fg_class').apply(lambda x: (x['Closed PnL'] > 0).mean())
 
-with open(os.path.join("ds_sohel", "ds_report_summary.txt"), "w") as f:
+with open(os.path.join("ds_anjum", "ds_report_summary.txt"), "w") as f:
     f.write("Analysis Summary\n")
     f.write("================\n\n")
     f.write("A. RISK metrics (Std Dev of PnL):\n")
@@ -122,4 +159,4 @@ with open(os.path.join("ds_sohel", "ds_report_summary.txt"), "w") as f:
     f.write("D. Total PnL:\n")
     f.write(str(df_merged['Closed PnL'].sum()) + "\n")
 
-print("Advanced Analysis complete. Outputs saved in ds_candidate/outputs/")
+print("Advanced Analysis complete. Outputs saved in ds_anjum/outputs/")

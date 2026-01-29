@@ -128,7 +128,7 @@ nb['cells'] = [
     nbf.v4.new_code_cell(code_stats)
 ]
 
-with open('ds_sohel/notebook_1.ipynb', 'w') as f:
+with open('ds_anjum/notebook_1.ipynb', 'w') as f:
     nbf.write(nb, f)
 
 print("Notebook created.")
